@@ -6,7 +6,9 @@ from datetime import datetime
 import os                       #to create a folder
 import pandas as pd             #create csv file
 
+# CONFIGURATION:
 SAVING = 1
+filename = 'JOSEF_TOURQUE_0040_TEST'
 
 #open serial port
 ser = serial.Serial(port='COM17', baudrate=115200, bytesize=8, stopbits=1, parity='N')
@@ -88,23 +90,35 @@ while True: #main infinit loop
         plt.tight_layout()  #prevents the axis label and the title of the subplots to overlap
         
 
-        if SAVING is 1:    # save the plot
+        if SAVING is 1:   
             now = datetime.now()
-            directory_filename = "D:\\RA_PROJECT\\" + now.strftime('%Y_%m\\%d')
+            directory_filename = "D:\\RA_PROJECT\\" + now.strftime('%Y_%m\\%d') #create '<month>/<day>' folder
+            # check wether the folder exists
             if not os.path.exists(directory_filename):
                 os.mkdir(directory_filename)  
-            dt_string = now.strftime("%H-%M-%S")        
-            plt.savefig(directory_filename + '\\plot-{}.png'.format(dt_string), dpi=300)
-            print('Plot file saved')
+            i = 1
+            while(i > 0):
+                if not os.path.isfile(directory_filename + '\\' + filename + '{}.png'.format(i)):
+                    # save the plot
+                    plt.savefig(directory_filename + '\\' + filename + '{}.png'.format(i), dpi=300)
+                    print(directory_filename + '\\' + filename + '{}.png'.format(i))
+                    print('Plot file saved')
+
+                    #save Excel
+                    df1 = pd.DataFrame({'datapoints [mg]': datalist, 'Time [s]': timelist})
+                    df2 = pd.DataFrame({'PSD [Power]': PSD.real[L], 'Freq [Hz]': freq[L]})
+                    #print (df1, df2)
+                    with pd.ExcelWriter(directory_filename + '\\' + filename + '{}.xlsx'.format(i)) as writer: #write each dataframe to another sheet
+                        df1.to_excel (writer, sheet_name='Time Domain')
+                        df2.to_excel (writer, sheet_name='PSD')
+                    print(directory_filename + '\\' + filename + '{}.xlsx'.format(i))
+                    print('Excle file saved')
+                    i = 0 # ends the while loop
+                else:
+                    i += 1
             
-            #save Excel
-            df1 = pd.DataFrame({'datapoints [mg]': datalist, 'Time [s]': timelist})
-            df2 = pd.DataFrame({'PSD [Power]': PSD.real[L], 'Freq [Hz]': freq[L]})
-            #print (df1, df2)
-            with pd.ExcelWriter(directory_filename + '\\data-{}.xlsx'.format(dt_string)) as writer: #write each dataframe to another sheet
-                df1.to_excel (writer, sheet_name='Time Domain')
-                df2.to_excel (writer, sheet_name='PSD')
-            print('Excle file saved')
+            
+            
                 
         plt.show()
         datalist = []
